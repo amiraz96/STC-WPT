@@ -13,7 +13,7 @@ This file includes the MUSIC algorithm [ref3] for estimating the AoAs.
 [ref3]: R. Schmidt, “Multiple emitter location and signal parameter estimation,” IEEE Trans. Antennas Propag., vol. 34, no. 3, pp. 276–280, 1986.
 ## LS_estimate.m
 This file performs the least square estimation on the received signal based on the obtained AoAs to estimate the reflection matrix coefficients.
-## RF-Beamforming
+## RF_Beamforming.m
 This file solves the WPT beamforming problem using semi-definite programming and CVX [ref4].
 
 [ref4]: M. Grant and S. Boyd, “CVX: Matlab software for disciplined convex programming, version 2.1.” http://cvxr.com/cvx, Mar. 2014.
