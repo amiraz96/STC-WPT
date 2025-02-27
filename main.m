@@ -51,7 +51,7 @@ for nss = 1:length(K_vec)
                     H_true = zeros(N_tot, K);
                     H_true_ul = zeros(N_r, K);
                     H_true_dl = zeros(N_t, K);
-                    H_true_PK = zeros(N_tot, K);
+                    H_PK = zeros(N_tot, K);
                     theta_rad = deg2rad(theta);  % Convert DOAs to radians
                     for ii = 1:K
                         at = exp(-1j * 2 * pi * d_inter * (0:N_tot-1).' * sin(theta_rad(ii)) / lambda);
@@ -59,7 +59,7 @@ for nss = 1:length(K_vec)
                     end
                     for ii = 1:K
                         at = exp(-1j * 2 * pi * d_inter * (0:N_tot-1).' * sin(theta_rad(ii)) / lambda);
-                        H_true_PK(:, ii) = sqrt(DL_losses(ii)).*at;
+                        H_PK(:, ii) = sqrt(DL_losses(ii)).*at;
                     end
                     for ii = 1:K
                         at = exp(-1j * 2 * pi * d_inter * (0:N_r-1).' * sin(theta_rad(ii)) / lambda);
@@ -74,7 +74,7 @@ for nss = 1:length(K_vec)
                     for ii = 1:K
                         A = A + CRS_val.*(H_true_ul(:, ii)*H_true_dl(:, ii).');
                     end
-                    [~, P_vec_CSI] = RF_Beamforming(H_true_PK, P_t, H_true, L_tot);
+                    [~, P_vec_CSI] = RF_Beamforming(H_PK, P_t, H_true, L_tot);
                     [P_vec_AA_IS, P_vec_AA_RAB] = CSI_free(P_t, H_true, L_tot, theta);
                     P_res_CSI(nss, sn, nr, nt, :, realiz) = min(real(P_vec_CSI))/L_tot;
                     P_res_RAB(nss, sn, nr, nt, :, realiz) = min(P_vec_AA_RAB)/L_tot;
