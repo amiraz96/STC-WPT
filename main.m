@@ -10,8 +10,8 @@ theta_min = -80;
 theta_max = -theta_min;
 scale_dist = 10; 
 min_dist = 5; % Minimum distance of the users
-ratio_vec = [0.05:0.05:0.95]; 
-N_r_vec = [24];
+ratio_vec = [0.05:0.05:1]; 
+N_r_vec = [16];
 N_t_vec = [8];
 K_vec = [1];
 Pt_vec = [10];
@@ -113,26 +113,19 @@ for nss = 1:length(K_vec)
                         alpha_hat = LS_estimate(d_inter, X_t, X, K, lambda, theta_est);
                         
                         %% Sensing Metrics and estimated channels
-                        ref_dl_est = sqrt(alpha_hat);
+                        ref_dl_est = sqrt(abs(alpha_hat));
                         H_est = zeros(N_tot, K);
                         theta_est_rad = deg2rad(theta_est);  % Convert DOAs to radians
                         for ii = 1:K
                             at = exp(-1j * 2 * pi * d_inter * (0:N_tot-1).' * sin(theta_est_rad(ii)) / lambda);
                             H_est(:, ii) = ref_dl_est(ii).*at;
                         end
-                        H_est_dl = zeros(N_t, K);
-                        H_est_ul = zeros(N_r, K);
                         A_est = zeros(N_r, N_t);
+   
                         for ii = 1:K
                             at = exp(-1j * 2 * pi * d_inter * (0:N_t-1).' * sin(theta_est_rad(ii)) / lambda);
-                            H_est_dl(:, ii) = ref_dl_est(ii).*at;
-                        end
-                        for ii = 1:K
-                            at = exp(-1j * 2 * pi * d_inter * (0:N_r-1).' * sin(theta_est_rad(ii)) / lambda);
-                            H_est_ul(:, ii) = ref_dl_est(ii).*at;
-                        end
-                        for ii = 1:K
-                            A_est = A_est + (H_est_ul(:, ii)*H_est_dl(:, ii).');
+                            ar = exp(-1j * 2 * pi * d_inter * (0:N_r-1).' * sin(theta_est_rad(ii)) / lambda);
+                            A_est = A_est + alpha_hat(ii).*(ar*at.');
                         end
                         RMSE_G = norm(A_est - A, 'fro')/sqrt(N_r*N_t);                        
                         %% RF beamforming
