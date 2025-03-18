@@ -11,9 +11,9 @@ theta_max = -theta_min;
 scale_dist = 10; 
 min_dist = 5; % Minimum distance of the users
 ratio_vec = [0.05:0.05:1]; 
-N_r_vec = [16];
-N_t_vec = [8];
-K_vec = [1];
+N_r_vec = [24];
+N_t_vec = [12];
+K_vec = [2];
 Pt_vec = [10];
 realiz_num = 500;
 noise_power_dBm = -70;
@@ -21,7 +21,10 @@ K_max = 8;
 dvec_main = min_dist + rand(realiz_num, K_max).*ones(realiz_num, K_max)*scale_dist;
 theta_main = theta_min + rand(realiz_num, K_max).*(theta_max - theta_min);
 P_res = zeros(length(K_vec), length(Pt_vec), length(N_r_vec), length(N_t_vec), length(ratio_vec), realiz_num);
-RMSE_res = zeros(length(K_vec), length(Pt_vec), length(N_r_vec), length(N_t_vec), length(ratio_vec), realiz_num);
+RMSE_res_G = zeros(length(K_vec), length(Pt_vec), length(N_r_vec), length(N_t_vec), length(ratio_vec), realiz_num);
+RMSE_res_theta = zeros(length(K_vec), length(Pt_vec), length(N_r_vec), length(N_t_vec), length(ratio_vec), realiz_num);
+RMSE_res_alpha = zeros(length(K_vec), length(Pt_vec), length(N_r_vec), length(N_t_vec), length(ratio_vec), realiz_num);
+RMSE_res_LoS = zeros(length(K_vec), length(Pt_vec), length(N_r_vec), length(N_t_vec), length(ratio_vec), realiz_num);
 P_res_RAB = zeros(length(K_vec), length(Pt_vec), length(N_r_vec), length(N_t_vec), length(ratio_vec), realiz_num);
 P_res_AA_IS = zeros(length(K_vec), length(Pt_vec), length(N_r_vec), length(N_t_vec), length(ratio_vec), realiz_num);
 P_res_CSI = zeros(length(K_vec), length(Pt_vec), length(N_r_vec), length(N_t_vec), length(ratio_vec), realiz_num);
@@ -48,6 +51,7 @@ for nss = 1:length(K_vec)
                     NLOS_fact = sqrt(1/ (ric_fact + 1));
                     DL_losses = (lambda./(4*pi.*dvec)).^2;
                     CRS_val = (randn + 1i * randn) / sqrt(2);
+                    alpha_main = CRS_val.*DL_losses;
                     H_true = zeros(N_tot, K);
                     H_true_ul = zeros(N_r, K);
                     H_true_dl = zeros(N_t, K);
@@ -127,14 +131,21 @@ for nss = 1:length(K_vec)
                             ar = exp(-1j * 2 * pi * d_inter * (0:N_r-1).' * sin(theta_est_rad(ii)) / lambda);
                             A_est = A_est + alpha_hat(ii).*(ar*at.');
                         end
-                        RMSE_G = norm(A_est - A, 'fro')/sqrt(N_r*N_t);                        
+                        RMSE_G = norm(A_est - A, 'fro')/sqrt(N_r*N_t);  
+                        alpha_hat = alpha_hat.';
+                        RMSE_thet = (norm(theta_est - theta))/(norm(theta)*sqrt(K));
+                        RMSE_alpha = (norm(alpha_hat - alpha_main))/(norm(alpha_main)*sqrt(K));
+                        RMSE_LoS = (norm(H_est(:) - H_true(:)))/(norm(H_true(:))*sqrt(length(H_true(:))));
                         %% RF beamforming
                         [~, P_vec] = RF_Beamforming(H_est, P_t, H_true, L_e);
 
                         %% Storing the results
                         final_P = real(P_vec + P_sense);
                         P_res(nss, sn, nr, nt, ll, realiz) = min(final_P)/L_tot;
-                        RMSE_res(nss, sn, nr, nt, ll, realiz) = RMSE_G;
+                        RMSE_res_G(nss, sn, nr, nt, ll, realiz) = RMSE_G;
+                        RMSE_res_theta(nss, sn, nr, nt, ll, realiz) = RMSE_thet;
+                        RMSE_res_alpha(nss, sn, nr, nt, ll, realiz) = RMSE_alpha;
+                        RMSE_res_LoS(nss, sn, nr, nt, ll, realiz) = RMSE_LoS;
                         file_name = strcat('Targets_', string(K), '_Pt_', string(Pt_dB), '_Nr_', ...
                             string(N_r), '_Nt_', string(N_t), '_Ratio_', string(sense_ratio), '__Realiz__', string(realiz));
                         disp(file_name)
@@ -174,8 +185,24 @@ xlabel('$\gamma$','Interpreter', 'latex','fontsize',12)
 
 figure
 set(gcf, 'Units', 'centimeters'); 
-set(gcf, 'Position', [3 3 12 8],'PaperSize', [12 19],'PaperPositionMode','auto');
-plot(ratio_vec, pow2db(reshape(mean(RMSE_res(1, 1, 1, 1, :, :), 6), [length(ratio_vec) 1])), ...
-     'LineStyle', '-', 'color',  'k','LineWidth', 2.5,'Marker', 's', 'MarkerSize',8)
-ylabel('$\mathrm{RMSE}_{\mathbf{G}_s}$','Interpreter', 'latex','fontsize',12)
+set(gcf, 'Position', [3 3 12 8],'PaperSize',[12 19],'PaperPositionMode','auto');
+plot(ratio_vec, pow2db(reshape(mean(RMSE_res_theta(1, 1, 1, 1, :, :), 6), [length(ratio_vec) 1])), ...
+     'LineStyle', '-', 'color',  'k','LineWidth', 2.5, 'MarkerSize',8)
+hold on
+plot(ratio_vec, pow2db(reshape(mean(RMSE_res_alpha(1, 1, 1, 1, :, :), 6), [length(ratio_vec) 1])), ...
+     'LineStyle', '--', 'color',  'k','LineWidth', 2.5, 'MarkerSize',8)
+plot(ratio_vec, pow2db(reshape(mean(RMSE_res_LoS(1, 1, 1, 1, :, :), 6), [length(ratio_vec) 1])), ...
+     'LineStyle', ':', 'color',  'k','LineWidth', 2.5, 'MarkerSize',8)
+box on
+grid on
+ylabel('$\mathrm{RMSE}({\mathbf{u}})$ (dB)','Interpreter', 'latex','fontsize',12)
 xlabel('$\gamma$','Interpreter', 'latex','fontsize',12)
+set(gca,'FontSize',12)
+fontsize(gcf, 12,"points")
+fontname(gcf, 'Times New Roman')
+hl1 = legend('$\mathbf{u} = [\theta_1, ..., \theta_K]$', ...
+    '$\mathbf{u} = [\alpha_1, ..., \alpha_K]$', ...
+    '$\mathbf{u} = [\beta_1 \mathbf{a}(\theta_1), ..., \beta_K \mathbf{a}(\theta_K)]$');
+set(hl1,'interpreter','latex','FontSize',12);
+set(hl1,'color','none');
+set(hl1, 'Box', 'off' );
