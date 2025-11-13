@@ -1,21 +1,88 @@
-# STC-WPT
-This repository provides the MATLAB simulation codes for the paper: "Sense-then-Charge: Wireless Power Transfer to Unresponsive Devices with Unknown Location".
-## CSI-free.m
-This file generates the results for the benchmark CSI-free approaches: RAB [ref1] and AA-IS [ref2].
+# Sense-Then-Charge Wireless Power Transfer Simulations
 
-[ref1]: O. L. A. López, H. Alves, S. Montejo-Sánchez, R. D. Souza and M. Latva-aho, "CSI-Free Rotary Antenna Beamforming for Massive RF Wireless Energy Transfer," in IEEE Internet of Things Journal, vol. 9, no. 10, pp. 7375-7387, 15 May 2022, doi: 10.1109/JIOT.2021.3107222.
+This repository contains MATLAB implementations for the simulations described in "Sense-then-charge: Wireless Power Transfer to Unresponsive Devices with Unknown Location". The code models a multi-user RF wireless power transfer (RF-WPT) system that first senses the propagation channel and then applies optimized beamforming to maximize the minimum received power across users.
 
-[ref2]: O. L. A. López, S. Montejo-Sánchez, R. D. Souza, C. B. Papadias and H. Alves, "On CSI-Free Multiantenna Schemes for Massive RF Wireless Energy Transfer," in IEEE Internet of Things Journal, vol. 8, no. 1, pp. 278-296, 1 Jan.1, 2021, doi: 10.1109/JIOT.2020.3003114.
+## Repository contents
 
-## MUSIC_AoA.m
-This file includes the MUSIC algorithm [ref3] for estimating the AoAs.
+| File | Purpose |
+| --- | --- |
+| `main.m` | End-to-end experiment driver. Sweeps system parameters, runs sensing, estimation, and beamforming, and stores metrics such as minimum received power and several RMSE measures. |
+| `RF_Beamforming.m` | Solves the downlink WPT beamforming problem using maximal ratio transmission for single-user cases and a semidefinite program (via CVX) for multi-user scenarios. |
+| `MUSIC_AoA.m` | Implements the MUSIC algorithm to estimate user angles of arrival from received uplink pilot snapshots. |
+| `LS_estimate.m` | Performs least-squares estimation of complex reflection coefficients given the estimated angles and the sensed transmit/receive signals. |
+| `CSI_free.m` | Evaluates channel-state-information-free benchmark strategies: adaptive antenna with isotropic sensing (AA-IS) and rotary antenna beamforming (RAB). |
 
-[ref3]: R. Schmidt, “Multiple emitter location and signal parameter estimation,” IEEE Trans. Antennas Propag., vol. 34, no. 3, pp. 276–280, 1986.
-## LS_estimate.m
-This file performs the least square estimation on the received signal based on the obtained AoAs to estimate the reflection matrix coefficients.
-## RF_Beamforming.m
-This file solves the WPT beamforming problem using semi-definite programming and CVX [ref4].
+## Requirements
 
-[ref4]: M. Grant and S. Boyd, “CVX: Matlab software for disciplined convex programming, version 2.1.” http://cvxr.com/cvx, Mar. 2014.
-## main.m
-This file includes an example of a main script, which generates the results for a given setup and plots the figures of RMSE and minimum received power as a function of the sensing allocation coefficient.
+* MATLAB (R2021a or later recommended).
+* CVX 2.1 or newer with an SDP-compatible solver (e.g., SDPT3, SeDuMi) for the semidefinite program in `RF_Beamforming.m`.
+* MATLAB Phased Array System Toolbox (for `physconst`).
+
+## Running the main experiment
+
+1. Install CVX and run `cvx_setup` inside MATLAB.
+2. Clone or download this repository and add the folder to the MATLAB path (for example, `addpath(genpath('path/to/STC-WPT'))`).
+3. Open `main.m` and adjust the simulation settings as desired. Key parameters include:
+   * `ratio_vec`: fraction of coherence blocks allocated to sensing versus charging.
+   * `N_r_vec` / `N_t_vec`: numbers of receiver and transmitter antennas.
+   * `K_vec`: number of devices.
+   * `Pt_vec`: transmit power values (in dB) to evaluate.
+   * `realiz_num`: number of Monte Carlo iterations.
+4. Run `main` from the MATLAB command window.
+
+During execution the script prints a label for each Monte Carlo realization (e.g., `Targets_2_Pt_10_Nr_24_Nt_12_Ratio_0.5__Realiz__37`) to indicate progress. After completion it leaves the following variables in the workspace:
+
+* `P_res`, `P_res_RAB`, `P_res_AA_IS`, `P_res_CSI`: minimum received energy per user for the proposed scheme and the benchmark methods.
+* `RMSE_res_G`, `RMSE_res_theta`, `RMSE_res_alpha`, `RMSE_res_LoS`: sensing and channel estimation accuracy metrics.
+
+Use MATLAB plotting utilities to visualize these arrays or save them to disk for post-processing.
+
+## Function highlights
+
+### `MUSIC_AoA`
+* Forms the sample covariance matrix from uplink snapshots and separates the signal/noise subspaces via eigenvalue decomposition.
+* Scans angles from −90° to 90° to locate dominant peaks in the MUSIC spectrum, padding with 0° if fewer than `K` peaks are detected.
+
+### `LS_estimate`
+* Builds transmit and receive steering matrices at the estimated angles and solves a least-squares problem (via Kronecker products) to recover the diagonal of the reflection matrix.
+
+### `RF_Beamforming`
+* Applies maximal ratio transmission for a single user.
+* Solves an SDP that maximizes the minimum harvested power subject to a transmit power constraint for multiple users (requires CVX).
+* Returns both the transmit covariance `W` used during charging and the achieved received power per user.
+
+### `CSI_free`
+* Computes the AA-IS benchmark assuming isotropic precoding during sensing.
+* Generates angle-dependent line-of-sight steering vectors for the RAB strategy and averages the received power over rotary beams.
+
+## Reproducibility tips
+
+* The scripts set MATLAB's random number generator to the default stream at the start of `main.m`, but additional `rng` calls appear inside some loops. Adjust these seeds if you require fully reproducible runs.
+* Simulation time grows with the number of antenna elements, users, and realizations. Begin with small vectors (e.g., `ratio_vec = 0.5`, `realiz_num = 10`) to validate the environment before running the full sweep.
+
+## References
+
+1. O. L. A. López et al., "CSI-Free Rotary Antenna Beamforming for Massive RF Wireless Energy Transfer," IEEE Internet of Things Journal, vol. 9, no. 10, pp. 7375–7387, 2022.
+2. O. L. A. López et al., "On CSI-Free Multiantenna Schemes for Massive RF Wireless Energy Transfer," IEEE Internet of Things Journal, vol. 8, no. 1, pp. 278–296, 2021.
+3. R. Schmidt, "Multiple emitter location and signal parameter estimation," IEEE Transactions on Antennas and Propagation, vol. 34, no. 3, pp. 276–280, 1986.
+4. M. Grant and S. Boyd, "CVX: Matlab software for disciplined convex programming, version 2.1," 2014.
+
+5. ## Citing
+
+If you use this code, please cite the associated article. A BibTeX entry is provided below.
+
+```bibtex
+@misc{azarbahram2025sensethenchargewirelesspowertransfer,
+      title={Sense-then-Charge: Wireless Power Transfer to Unresponsive Devices with Unknown Location}, 
+      author={Amirhossein Azarbahram and Onel L. A. López and Richard D. Souza and Petar Popovski and Matti Latva-aho},
+      year={2025},
+      eprint={2504.20580},
+      archivePrefix={arXiv},
+      primaryClass={eess.SP},
+      url={https://arxiv.org/abs/2504.20580}, 
+}
+```
+
+## License
+
+The repository inherits the usage rights granted by the original authors. Refer to the paper or contact the authors for explicit licensing terms.
