@@ -37,23 +37,6 @@ During execution the script prints a label for each Monte Carlo realization (e.g
 
 Use MATLAB plotting utilities to visualize these arrays or save them to disk for post-processing.
 
-## Function highlights
-
-### `MUSIC_AoA`
-* Forms the sample covariance matrix from uplink snapshots and separates the signal/noise subspaces via eigenvalue decomposition.
-* Scans angles from −90° to 90° to locate dominant peaks in the MUSIC spectrum, padding with 0° if fewer than `K` peaks are detected.
-
-### `LS_estimate`
-* Builds transmit and receive steering matrices at the estimated angles and solves a least-squares problem (via Kronecker products) to recover the diagonal of the reflection matrix.
-
-### `RF_Beamforming`
-* Applies maximal ratio transmission for a single user.
-* Solves an SDP that maximizes the minimum harvested power subject to a transmit power constraint for multiple users (requires CVX).
-* Returns both the transmit covariance `W` used during charging and the achieved received power per user.
-
-### `CSI_free`
-* Computes the AA-IS benchmark assuming isotropic precoding during sensing.
-* Generates angle-dependent line-of-sight steering vectors for the RAB strategy and averages the received power over rotary beams.
 
 ## Reproducibility tips
 
