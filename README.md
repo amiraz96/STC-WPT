@@ -1,5 +1,5 @@
 # STC-WPT
-This repository provides the MATLAB simulation codes for the paper: "Sense-then-charge Protocol for RF Wireless Power Transfer to Unresponsive Devices with Unknown Location".
+This repository provides the MATLAB simulation codes for the paper: "Sense-then-Charge: Wireless Power Transfer to Unresponsive Devices with Unknown Location".
 ## CSI-free.m
 This file generates the results for the benchmark CSI-free approaches: RAB [ref1] and AA-IS [ref2].
 
